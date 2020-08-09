@@ -3,9 +3,9 @@
 [贴吧首页](https://tieba.baidu.com/)
 
 # 配置
-* **Openssl v1.1.1**以上
-* **vs2019** 或者更低版本也行
-* **C++ 11** 标准
+* **Openssl v1.1.0**以上
+* **vs2019** 或者更低版本也行（？~~没测试过~~
+* **C++ 11** 标准（~~大概~~？我忘了有没有加C++14/17的内容）
 
 # 编译
 * 下载src和openssl库，在vs配置openssl路径，把dll添加在vs项目内，然后bulid
@@ -54,7 +54,7 @@ struct TiebaMsg
 * vector容器存储每个贴吧的信息 
 ```C++
     TiebaMsg single_tb;
-    vector<TiebaMsg>tb;
+    std::vector<TiebaMsg>tb;
     tb.push_back(single_tb);
     ...
 ``` 
@@ -82,9 +82,8 @@ struct TiebaMsg
         * 十六进制Unicode字符串转义
         * 中文URL编码
 3. 数据结构
-    * 动态容器
-        * vector
-        * map
+    * vector
+    * map（红黑树）
 
 # 参考
 1. [利用爬虫自动签到所有贴吧](https://zhuanlan.zhihu.com/p/46137712)  
