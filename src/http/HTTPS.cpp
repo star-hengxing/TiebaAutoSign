@@ -1,4 +1,5 @@
-#include"Headers.hpp"
+#include <iostream>
+#include "include/http/HTTPS.hpp"
 
 HTTPS::HTTPS() {}
 
@@ -11,7 +12,7 @@ HTTPS::HTTPS(const std::string & url) : HTTP::HTTP(url)
 	if (!ctx)
 	{
 		ERR_print_errors_fp(stderr);
-		std::cout << "SSL_CTX_new error!" << std::endl;
+		throw std::runtime_error("SSL_CTX_new error!");
 	}
 }
 
@@ -20,7 +21,7 @@ HTTPS::~HTTPS()
 	SSL_CTX_free(ctx);//释放SSL会话环境
 }
 
-bool HTTPS::connect_server()
+void HTTPS::connect_server()
 {
 	CheckError(connect(client_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR, "连接服务器失败");
 	ssl = SSL_new(ctx);//创建一个SSL套接字
@@ -30,6 +31,7 @@ bool HTTPS::connect_server()
 	CheckError(SSL_write(ssl, request.c_str(), request.size())==-1,"SSL write error");
 
 	char* buffer = new char[BUFFER * BUFFER];
+	memset(buffer,0,BUFFER * BUFFER);
 	response = "";//刷新缓冲
 	int index = 0;
 	int buffer_size;
@@ -51,12 +53,4 @@ bool HTTPS::connect_server()
 	SSL_shutdown(ssl);//关闭SSL套接字 
 	SSL_free(ssl);//释放SSL套接字 
 	closesocket(client_socket);
-	if(response.size())
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
 }

@@ -1,7 +1,23 @@
 #ifndef _HTTP_HPP
 #define _HTTP_HPP
 
-#include"Headers.hpp"
+#include <winsock2.h>
+#pragma comment(lib,"ws2_32.lib")
+#include <string>
+#include <vector>
+#include <map>
+
+constexpr int BUFFER(1024);
+
+constexpr int MATCH_CONTENT(1);//regex_search()匹配成功得到的结果放在smatch容器里，容器第一个是正则表达式选定范围的整个字符串，第二个才是匹配()内的字符串(通常来说)
+
+struct HostNameMsg
+{
+	std::string HostName;
+	int AddressType;
+	std::vector<std::string> IP;
+	int port;
+};
 
 class HTTP
 {
@@ -23,12 +39,14 @@ public:
     explicit HTTP(const std::string & URL);
     virtual ~HTTP();
 
-    virtual bool connect_server();
+    virtual void connect_server();
 
-    bool parse_response();
+    void parse_response();
     int response_status_code();
 
-    const std::string GetPage() const;
+    virtual const std::string execute();
+
+    inline const std::string GetPage() const noexcept;
 
     void get();
     void get(const std::string & headers);

@@ -1,4 +1,6 @@
-#include"Headers.hpp"
+#include <iostream>
+#include <regex>
+#include "include/http/HTTP.hpp"
 
 HTTP::HTTP()
 {
@@ -26,7 +28,7 @@ HTTP::HTTP(const std::string& url) : HTTP::HTTP()
 	}
 	else
 	{
-		std::cout << "解析URL失败" << std::endl;
+		throw  std::runtime_error("解析URL失败");
 	}
 	hostent* host = gethostbyname(server_msg.HostName.c_str());
 	CheckError(!host, "解析域名失败");
@@ -50,16 +52,16 @@ HTTP::~HTTP()
 	WSACleanup();
 }
 
-bool HTTP::connect_server()
+void HTTP::connect_server()
 {
 	CheckError(connect(client_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR, "连接服务器失败");
 	CheckError(send(client_socket, request.c_str(), request.size(), 0) == SOCKET_ERROR, "发送请求报文失败");
 
 	char* buffer = new char[BUFFER * BUFFER];
+	memset(buffer,0,BUFFER * BUFFER);
 	int index = 0;
 	int buffer_size;
-	response = "";//刷新缓冲
-	//TODO:Remove useless characters and reduce to use RAM
+	response.clear();//刷新缓冲
 	while (1)
 	{
 		buffer_size = recv(client_socket, buffer, BUFFER, 0);
@@ -75,21 +77,13 @@ bool HTTP::connect_server()
 	}
 	delete[] buffer;
 	closesocket(client_socket);
-	if (response.size())
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
 }
 
-bool HTTP::parse_response()
+void HTTP::parse_response()
 {
 	if (response.empty())
 	{
-		return false;
+		return;
 	}
 	std::string response_head;
 	int index_head, i;
@@ -101,7 +95,7 @@ bool HTTP::parse_response()
 	{
 		if (i > response.size())
 		{
-			return false;
+			return;
 		}
 		if (response[i] == '\r' && response[i + 1] == '\n')
 		{
@@ -115,8 +109,7 @@ bool HTTP::parse_response()
 			}
 			else
 			{
-				std::cout << "解析响应行失败" << std::endl;
-				return false;
+				throw std::runtime_error("解析响应行失败");
 			}
 		}
 	}
@@ -140,12 +133,10 @@ bool HTTP::parse_response()
 	}
 	if (request_head_and_value.size() < 3)
 	{
-		std::cout << "解析响应头失败" << std::endl;
-		return false;
+		throw std::runtime_error("解析响应行失败");
 	}
 	//解析后把响应主体拷贝给Page
 	page = response.substr(i + 4, response.size());
-	return true;
 }
 
 int HTTP::response_status_code()
@@ -156,10 +147,18 @@ int HTTP::response_status_code()
 	}
 }
 
-const std::string HTTP::GetPage() const
+inline const std::string HTTP::GetPage() const noexcept
 {
 	return page;
 }
+
+const std::string HTTP::execute()
+{
+	connect_server();
+	parse_response();
+	return page;
+}
+
 //纯get方法
 void HTTP::get()
 {
@@ -209,7 +208,6 @@ void HTTP::CheckError(const bool bool_execute, const char* ErrorMessage)
 {
 	if (bool_execute)
 	{
-		std::cout << ErrorMessage << std::endl;
-		system("pause");
+		throw std::runtime_error(ErrorMessage);
 	}
 }

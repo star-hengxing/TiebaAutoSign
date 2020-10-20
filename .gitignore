@@ -1,1 +1,8 @@
-# My configurations:
+# My configurations
+CMakeLists.txt
+
+# vscode
+.vscode
+
+# cmake build
+out

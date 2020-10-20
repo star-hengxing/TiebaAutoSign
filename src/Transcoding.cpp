@@ -1,53 +1,51 @@
-#include"Headers.hpp"
+#include <iostream>
+#include <Windows.h>
+#include <memory>
 
-const std::wstring Transcoding::StringToWstring(const std::string& str) const
+#include "include/Transcoding.hpp"
+
+const std::wstring StringToWstring(const std::string& str)
 {
 	std::wstring return_string;
 	int size = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), NULL, 0);
 	if (size == 0)
 	{
-		return WSTRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	wchar_t* pstr = new wchar_t[size + 1];
-	if (MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), pstr, size) == 0)
+	std::unique_ptr<wchar_t[]> pstr(new wchar_t[size + 1]);
+	if (MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), pstr.get(), size) == 0)
 	{
-		delete[] pstr;
-		return WSTRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	pstr[size] = '\0';
-	return_string = pstr;
-	delete[] pstr;
-	pstr = nullptr;
+	pstr.get()[size] = '\0';
+	return_string = pstr.get();
 	return return_string;
 }
 
-const std::string Transcoding::WstringToString(const std::wstring& str) const
+const std::string WstringToString(const std::wstring& str)
 {
 	std::string return_string;
 	int size = WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), NULL, 0, NULL, NULL);
 	if (size == 0)
 	{
-		return STRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	char* pstr = new char[size + 1];
-	if (WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), pstr, size, NULL, NULL) == 0)
+	std::unique_ptr<char[]> pstr(new char[size + 1]);
+	if (WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), pstr.get(), size, NULL, NULL) == 0)
 	{
-		delete[] pstr;
-		return STRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	pstr[size] = '\0';
-	return_string = pstr;
-	delete[] pstr;
-	pstr = nullptr;
+	pstr.get()[size] = '\0';
+	return_string = pstr.get();
 	return return_string;
 }
 
-const std::string Transcoding::ChineseURLEncode(const std::string& str) const
+const std::string ChineseURLEncode(const std::string& str)
 {
 	std::string return_string;
 	int size = str.size() * 3 + 1;
-	char* pstr = new char[size];
-	int i = 0;
+	std::unique_ptr<char[]> pstr(new char[size]);
+	int i(0);
 
 	for (const auto& y : str)
 	{
@@ -55,41 +53,37 @@ const std::string Transcoding::ChineseURLEncode(const std::string& str) const
 		{
 			if (y >= 0x41 && y <= 0x5A || y >= 0x61 && y <= 0x7A)
 			{
-				pstr[i] = y;
+				pstr.get()[i] = y;
 				i++;
 			}
 			else
 			{
-				if (sprintf(pstr + i, "%%%02X", (unsigned char)y) < 0)
+				if (sprintf(pstr.get() + i, "%%%02X", (unsigned char)y) < 0)
 				{
-					std::cout << "url encoded error!" << std::endl;
-					return STRING_ERROR;
+					throw std::runtime_error(URL_ENCODE_ERROR);
 				}
 				i += 3;
 			}
 		}
 		else
 		{
-			if (sprintf(pstr + i, "%%%02X", (unsigned char)y) < 0)
+			if (sprintf(pstr.get() + i, "%%%02X", (unsigned char)y) < 0)
 			{
-				std::cout << "url encoded error!" << std::endl;
-				return STRING_ERROR;
+				throw std::runtime_error(URL_ENCODE_ERROR);
 			}
 			i += 3;
 		}
 	}
-	pstr[i] = '\0';
-	return_string = pstr;
-	delete[] pstr;
-	pstr = nullptr;
+	pstr.get()[i] = '\0';
+	return_string =pstr.get();
 	return return_string;
 }
 
-const std::string Transcoding::Unicode_escape(const std::string& str) const
+const std::string Unicode_escape(const std::string& str)
 {
 	if (str.find("\\u") != std::string::npos)
 	{
-		int index_head = 0, index_end = 0;
+		int index_head(0), index_end(0);
 		std::string temp_string, return_string;
 		std::wstring wstr;
 		while (1)
@@ -116,8 +110,7 @@ const std::string Transcoding::Unicode_escape(const std::string& str) const
 				wstr = strtol(temp_string.c_str(), NULL, 16);
 				if (!wstr.c_str())
 				{
-					std::cout << "Unicode escape error!" << std::endl;
-					return STRING_ERROR;
+					throw URL_ESCAPE_ERROR;
 				}
 				else
 				{
@@ -133,24 +126,21 @@ const std::string Transcoding::Unicode_escape(const std::string& str) const
 	}
 }
 
-const std::string Transcoding::GBKToUTF8(const std::string& str) const
+const std::string GBKToUTF8(const std::string& str)
 {
 	std::wstring x = StringToWstring(str);
 	std::string return_string;
 	int size = WideCharToMultiByte(CP_UTF8, 0, x.c_str(), x.size(), NULL, 0, NULL, NULL);
 	if (size == 0)
 	{
-		return STRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	char* pstr = new char[size + 1];
-	if (WideCharToMultiByte(CP_UTF8, 0, x.c_str(), x.size(), pstr, size, NULL, NULL) == 0)
+	std::unique_ptr<char[]> pstr(new char[size + 1]);
+	if (WideCharToMultiByte(CP_UTF8, 0, x.c_str(), x.size(), pstr.get(), size, NULL, NULL) == 0)
 	{
-		delete[] pstr;
-		return STRING_ERROR;
+		throw std::runtime_error(STRING_ERROR);
 	}
-	pstr[size] = '\0';
-	return_string = pstr;
-	delete[] pstr;
-	pstr = nullptr;
+	pstr.get()[size] = '\0';
+	return_string = pstr.get();
 	return return_string;
 }
