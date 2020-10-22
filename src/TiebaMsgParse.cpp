@@ -1,5 +1,6 @@
 #include <iostream>
 #include <regex>
+#include <ctime>
 #include "include/http/HTTP.hpp"
 #include "include/http/HTTPS.hpp"
 #include "include/Transcoding.hpp"
@@ -33,8 +34,8 @@ std::vector<TiebaMsg> TiebaMsgParse::search_kw_and_is_sign()
 			{
 				//中文贴吧名Unicode字符转码
 				temp.name = Unicode_escape(temp.name);
-				temp.kw = GBKToUTF8(temp.name);
-				temp.kw = ChineseURLEncode(temp.kw);
+				temp.name = GBKToUTF8(temp.name);
+				temp.kw = ChineseURLEncode(temp.name);
 				//关于贴吧首页相同贴吧名会出现两次
 				if (tb.size() > 1)
 				{
@@ -104,7 +105,7 @@ void TiebaMsgParse::check_tb_sign() const noexcept
 	{
 		if (x.is_sign)
 		{
-			count++;
+			++count;
 		}
 	}
 
@@ -113,10 +114,12 @@ void TiebaMsgParse::check_tb_sign() const noexcept
 
 void TiebaMsgParse::one_key_sign_in() const
 {
-	try
+	time_t t = time(0);
+	struct tm* time = localtime(&t);
+	if (time->tm_hour > 2)
 	{
 		std::string tbs = this->search_tbs();
-		std::string data("ie=utf-8&tbs=" + tbs);
+		std::string data = "ie=utf-8&tbs=" + tbs;
 
 		HTTPS temp("https://tieba.baidu.com/tbmall/onekeySignin1");
 		HTTP* x = &temp;
@@ -129,48 +132,40 @@ void TiebaMsgParse::one_key_sign_in() const
 			std::string check = result[MATCH_CONTENT];
 			if (check.find("success") != std::string::npos) {}
 			else if (check.find("forums is signed") != std::string::npos) {}
+			else if (check.find("time error") != std::string::npos)
+			{
+				throw std::runtime_error("凌晨两点后才能一键签到");
+			}
 			else
 			{
 				throw std::runtime_error("一键签到失败");
 			}
 		}
 	}
-	catch (const char *e)
-	{
-		std::cerr << e << '\n';
-		throw;
-	}
 }
 
 void TiebaMsgParse::single_tieba_sign_in(const std::string& name, const std::string& kw) const
 {
-	try
+	std::string tbs = search_tbs();
+	std::string data = "ie=utf-8&kw=" + kw + "&tbs=" + tbs;
+
+	HTTPS y("https://tieba.baidu.com/sign/add");
+	HTTP* x = &y;
+	x->post(cookie, data);
+	std::string page = x->execute();
+
+	std::smatch result;
+	//"error":"(.*?)"
+	std::regex_search(page, result, std::regex("\"error\":\"(.*?)\""));
+	if (result.size() >= 2)
 	{
-		std::string tbs = search_tbs();
-		std::string data = "ie=utf-8&kw=" + kw + "&tbs=" + tbs;
-
-		HTTPS y("https://tieba.baidu.com/sign/add");
-		HTTP* x = &y;
-		x->post(cookie, data);
-		std::string page = x->execute();
-
-		std::smatch result;
-		//"error":"(.*?)"
-		std::regex_search(page, result, std::regex("\"error\":\"(.*?)\""));
-		if (result.size() >= 2)
+		page = result[MATCH_CONTENT];
+		if (!page.size())
 		{
-			page = result[MATCH_CONTENT];
-			if (!page.size())
-			{
-				std::cout << name << "吧签到成功" << std::endl;
-				return;
-			}
-			throw std::runtime_error(Unicode_escape(page));
+			std::cout << name << "吧签到成功" << std::endl;
+			return;
 		}
-	}
-	catch (const std::exception & e)
-	{
-		std::cerr << e.what() << '\n';
+		throw std::runtime_error(Unicode_escape(page));
 	}
 }
 
