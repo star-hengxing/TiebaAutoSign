@@ -8,8 +8,8 @@
 
 ps：一键签到是在凌晨两点后才能使用的
 
-# 使用（Release暂未发布）
-在Release下载后，从浏览器找你的cookie复制粘贴到cookie.txt文件里  
+# 使用
+在Release下载后，新建一个Cookie.txt文件，从浏览器找你的cookie,复制粘贴到文件里  
 [如何找到cookie？](doc/如何获取你的Cookie.pdf)  
 最后，点开exe完事
 
