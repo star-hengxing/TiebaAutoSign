@@ -1,8 +1,10 @@
-# My configurations
-CMakeLists.txt
-
-# vscode
+.vs
 .vscode
+.xmake
+.cache
 
-# cmake build
+# build
+build
 out
+
+Cookie.txt
